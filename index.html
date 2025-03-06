@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h2 {
+            color: #333;
+        }
+        input {
+            padding: 10px;
+            width: 200px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .reset-btn {
+            background-color: #dc3545;
+        }
+        .reset-btn:hover {
+            background-color: #c82333;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        td button {
+            background-color: #dc3545;
+        }
+        td button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h2>Attendance Tracker</h2>
+    <input type="text" id="nameInput" placeholder="Enter your name" onkeypress="handleKeyPress(event)">
+    <button onclick="registerEntry()">Register</button>
+    <button onclick="downloadTable()">Download Table</button>
+    <button class="reset-btn" onclick="resetTable()">Reset Data</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Entry Time</th>
+                <th>Leave Time</th>
+                <th>Total Duration</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTable"></tbody>
+    </table>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadAttendance);
+        
+        function registerEntry() {
+            let name = document.getElementById("nameInput").value.trim();
+            if (name === "") {
+                alert("Please enter a name.");
+                return;
+            }
+            let entryTime = new Date().toLocaleTimeString();
+            let table = document.getElementById("attendanceTable");
+            let row = table.insertRow();
+
+            row.insertCell(0).textContent = name;
+            row.insertCell(1).textContent = entryTime;
+            row.insertCell(2).textContent = "-";
+            row.insertCell(3).textContent = "00:00";
+
+            let leaveButton = document.createElement("button");
+            leaveButton.textContent = "Leave";
+            leaveButton.onclick = function () {
+                let leaveTime = new Date().toLocaleTimeString();
+                row.cells[2].textContent = leaveTime;
+                let duration = calculateDuration(row.cells[1].textContent, leaveTime);
+                row.cells[3].textContent = duration;
+                leaveButton.disabled = true;
+                saveAttendance();
+            };
+            row.insertCell(4).appendChild(leaveButton);
+            
+            saveAttendance();
+            document.getElementById("nameInput").value = "";
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                registerEntry();
+            }
+        }
+
+        function calculateDuration(entry, leave) {
+            if (!entry || !leave || entry === "-" || leave === "-") {
+                return "00:00";
+            }
+            let entryTime = new Date("1970-01-01T" + entry);
+            let leaveTime = new Date("1970-01-01T" + leave);
+            if (isNaN(entryTime) || isNaN(leaveTime)) {
+                return "00:00";
+            }
+            let durationMs = leaveTime - entryTime;
+            let hours = Math.floor(durationMs / (1000 * 60 * 60));
+            let minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function saveAttendance() {
+            let table = document.getElementById("attendanceTable");
+            let rows = table.rows;
+            let attendanceData = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                let cols = rows[i].cells;
+                attendanceData.push({
+                    name: cols[0].textContent,
+                    entry: cols[1].textContent,
+                    leave: cols[2].textContent,
+                    duration: cols[3].textContent
+                });
+            }
+            localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+        }
+
+        function resetTable() {
+            if (confirm("Are you sure you want to reset all data?")) {
+                localStorage.removeItem("attendanceData");
+                document.getElementById("attendanceTable").innerHTML = "";
+            }
+        }
+    </script>
+</body>
+</html>
