@@ -34,10 +34,10 @@
         button:hover {
             background-color: #218838;
         }
-        .reset-btn {
+        .clear-button {
             background-color: #dc3545;
         }
-        .reset-btn:hover {
+        .clear-button:hover {
             background-color: #c82333;
         }
         table {
@@ -69,7 +69,7 @@
     <input type="text" id="nameInput" placeholder="Enter your name" onkeypress="handleKeyPress(event)">
     <button onclick="registerEntry()">Register</button>
     <button onclick="downloadTable()">Download Table</button>
-    <button class="reset-btn" onclick="resetTable()">Reset Data</button>
+    <button class="clear-button" onclick="clearData()">Clear Data</button>
     <table>
         <thead>
             <tr>
@@ -84,7 +84,9 @@
     </table>
 
     <script>
-        document.addEventListener("DOMContentLoaded", loadAttendance);
+        document.addEventListener("DOMContentLoaded", function() {
+            loadAttendance();
+        });
         
         function registerEntry() {
             let name = document.getElementById("nameInput").value.trim();
@@ -155,8 +157,34 @@
             localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
         }
 
-        function resetTable() {
-            if (confirm("Are you sure you want to reset all data?")) {
+        function loadAttendance() {
+            let data = localStorage.getItem("attendanceData");
+            if (data) {
+                let table = document.getElementById("attendanceTable");
+                JSON.parse(data).forEach(entry => {
+                    let row = table.insertRow();
+                    row.insertCell(0).textContent = entry.name;
+                    row.insertCell(1).textContent = entry.entry;
+                    row.insertCell(2).textContent = entry.leave;
+                    row.insertCell(3).textContent = entry.duration;
+                    let leaveButton = document.createElement("button");
+                    leaveButton.textContent = "Leave";
+                    leaveButton.disabled = entry.leave !== "-";
+                    leaveButton.onclick = function () {
+                        let leaveTime = new Date().toLocaleTimeString();
+                        row.cells[2].textContent = leaveTime;
+                        let duration = calculateDuration(row.cells[1].textContent, leaveTime);
+                        row.cells[3].textContent = duration;
+                        leaveButton.disabled = true;
+                        saveAttendance();
+                    };
+                    row.insertCell(4).appendChild(leaveButton);
+                });
+            }
+        }
+
+        function clearData() {
+            if (confirm("Are you sure you want to clear all attendance data?")) {
                 localStorage.removeItem("attendanceData");
                 document.getElementById("attendanceTable").innerHTML = "";
             }
